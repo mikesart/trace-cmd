@@ -291,10 +291,8 @@ static int msg_read(int fd, void *buf, u32 size, int *n)
 	ssize_t r;
 
 	while (size) {
-		r = read(fd, buf + *n, size);
+		r = read_intr(fd, buf + *n, size);
 		if (r < 0) {
-			if (errno == EINTR)
-				continue;
 			return -errno;
 		} else if (!r)
 			return -ENOTCONN;
@@ -662,10 +660,8 @@ int tracecmd_msg_collect_metadata(int ifd, int ofd)
 		t = n;
 		s = 0;
 		do {
-			s = write(ofd, msg.data.meta.buf+s, t);
+			s = write_intr(ofd, msg.data.meta.buf+s, t);
 			if (s < 0) {
-				if (errno == EINTR)
-					continue;
 				warning("writing to file");
 				return -errno;
 			}

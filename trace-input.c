@@ -202,7 +202,7 @@ static ssize_t do_read(struct tracecmd_input *handle, void *data, size_t size)
 	ssize_t r;
 
 	do {
-		r = read(handle->fd, data + tot, size - tot);
+		r = read_intr(handle->fd, data + tot, size - tot);
 		tot += r;
 
 		if (!r)
@@ -774,7 +774,7 @@ static int read_page(struct tracecmd_input *handle, off64_t offset,
 	off64_t ret;
 
 	if (handle->use_pipe) {
-		ret = read(handle->cpu_data[cpu].pipe_fd, map, handle->page_size);
+		ret = read_intr(handle->cpu_data[cpu].pipe_fd, map, handle->page_size);
 		/* Set EAGAIN if the pipe is empty */
 		if (ret < 0) {
 			errno = EAGAIN;
@@ -2647,7 +2647,7 @@ struct tracecmd_input *tracecmd_alloc(const char *file)
 {
 	int fd;
 
-	fd = open(file, O_RDONLY);
+	fd = open_intr(file, O_RDONLY);
 	if (fd < 0)
 		return NULL;
 
@@ -2688,7 +2688,7 @@ struct tracecmd_input *tracecmd_open(const char *file)
 {
 	int fd;
 
-	fd = open(file, O_RDONLY);
+	fd = open_intr(file, O_RDONLY);
 	if (fd < 0)
 		return NULL;
 

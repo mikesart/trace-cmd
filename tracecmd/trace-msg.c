@@ -692,10 +692,8 @@ int tracecmd_msg_collect_metadata(struct tracecmd_msg_handle *msg_handle, int of
 		t = n;
 		s = 0;
 		do {
-			s = write(ofd, msg.buf+s, t);
+			s = write_intr(ofd, msg.buf+s, t);
 			if (s < 0) {
-				if (errno == EINTR)
-					continue;
 				warning("writing to file");
 				return -errno;
 			}

@@ -27,13 +27,50 @@
 
 extern int quiet;
 
-static ssize_t __do_write(int fd, const void *data, size_t size)
+static inline ssize_t
+read_intr(int fd, void *buf, size_t count)
+{
+	ssize_t result;
+
+	do {
+		result = read(fd, buf, count);
+	} while (result == -1L && errno == EINTR);
+
+	return result;
+}
+
+static inline ssize_t
+write_intr(int fd, const void *buf, size_t count)
+{
+	ssize_t result;
+
+	do {
+		result = write(fd, buf, count);
+	} while (result == -1L && errno == EINTR);
+
+	return result;
+}
+
+static inline int
+open_intr(const char *pathname, int flags)
+{
+	int result;
+
+	do {
+		result = open(pathname, flags);
+	} while (result == -1L && errno == EINTR);
+
+	return result;
+}
+
+static ssize_t
+__do_write(int fd, const void *data, size_t size)
 {
 	ssize_t tot = 0;
 	ssize_t w;
 
 	do {
-		w = write(fd, data + tot, size - tot);
+		w = write_intr(fd, data + tot, size - tot);
 		tot += w;
 
 		if (!w)

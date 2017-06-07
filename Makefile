@@ -196,12 +196,28 @@ INCLUDES += -I$(obj)/kernel-shark/include
 include $(src)/features.mk
 
 # Set compile option CFLAGS if not set elsewhere
-CFLAGS ?= -g -Wall
+CFLAGS ?= -gdwarf-4 -Wall -O0
 CPPFLAGS ?=
 LDFLAGS ?=
 
 export CFLAGS
 export INCLUDES
+
+WARNINGS = -Wall -Wextra -Wpedantic -Wmissing-include-dirs -Wformat=2 -Wshadow -Wno-unused-parameter -Wno-missing-field-initializers -Wsuggest-attribute=format -Wpointer-sign
+WARNINGS += -Wno-pointer-arith -Wno-missing-include-dirs -Wno-shadow -Wno-sign-compare -Wno-pedantic -Wno-variadic-macros -Wno-format-nonliteral
+
+ASAN ?= 0
+ifeq ($(ASAN), 1)
+	ASAN_FLAGS = -fno-omit-frame-pointer -fno-optimize-sibling-calls
+	ASAN_FLAGS += -fsanitize=address # fast memory error detector (heap, stack, global buffer overflow, and use-after free)
+	ASAN_FLAGS += -fsanitize=leak # detect leaks
+	ASAN_FLAGS += -fsanitize=undefined # fast undefined behavior detector
+	ASAN_FLAGS += -fsanitize=float-divide-by-zero # detect floating-point division by zero;
+	ASAN_FLAGS += -fsanitize=bounds # enable instrumentation of array bounds and detect out-of-bounds accesses;
+	ASAN_FLAGS += -fsanitize=object-size # enable object size checking, detect various out-of-bounds accesses.
+	CFLAGS += $(ASAN_FLAGS) $(WARNINGS)
+	LDFLAGS += $(ASAN_FLAGS)
+endif
 
 # Required CFLAGS
 override CFLAGS += -D_GNU_SOURCE

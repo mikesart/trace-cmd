@@ -22,7 +22,7 @@ extern bool send_metadata;
 /* for server */
 extern bool done;
 
-void plog(const char *fmt, ...);
-void pdie(const char *fmt, ...);
+void plog(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
+void pdie(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
 
 #endif /* _TRACE_MSG_H_ */

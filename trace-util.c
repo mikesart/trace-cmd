@@ -1632,6 +1632,7 @@ void tracecmd_put_tracing_file(char *name)
 	free(name);
 }
 
+void __vdie(const char *fmt, va_list ap) __attribute__( ( __format__( __printf__, 1, 0 ) ) );
 void __vdie(const char *fmt, va_list ap)
 {
 	int ret = errno;
@@ -1648,6 +1649,7 @@ void __vdie(const char *fmt, va_list ap)
 	exit(ret);
 }
 
+void __die(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
 void __die(const char *fmt, ...)
 {
 	va_list ap;
@@ -1659,6 +1661,7 @@ void __die(const char *fmt, ...)
 
 #define __weak __attribute__((weak))
 
+void __weak die(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
 void __weak die(const char *fmt, ...)
 {
 	va_list ap;

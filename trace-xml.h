@@ -38,7 +38,7 @@ void tracecmd_xml_end_sub_system(struct tracecmd_xml_handle *handle);
 
 int tracecmd_xml_write_element(struct tracecmd_xml_handle *handle,
 			       const char *obj,
-			       const char *fmt, ...);
+			       const char *fmt, ...) __attribute__( ( __format__( __printf__, 3, 4 ) ) );
 
 struct tracecmd_xml_handle *tracecmd_xml_open(const char *file);
 

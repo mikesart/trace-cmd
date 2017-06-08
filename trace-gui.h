@@ -45,7 +45,7 @@ void trace_dialog_register_alt_warning(void (*alt)(const char *fmt, va_list ap))
 void trace_show_help(GtkWidget *window, const gchar *link, GError **error);
 
 GtkResponseType trace_dialog(GtkWindow *parent, enum trace_dialog_type type,
-			     gchar *message, ...);
+			     gchar *message, ...) __attribute__( ( __format__( __printf__, 3, 4 ) ) );
 
 gchar *trace_get_file_dialog_filter(const gchar *title, const char *open,
 			     enum trace_dialog_filter, gboolean warn);

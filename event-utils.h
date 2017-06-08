@@ -23,16 +23,16 @@
 #include <ctype.h>
 
 /* Can be overridden */
-void warning(const char *fmt, ...);
-void pr_stat(const char *fmt, ...);
-void vpr_stat(const char *fmt, va_list ap);
+void warning(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
+void pr_stat(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
+void vpr_stat(const char *fmt, va_list ap) __attribute__( ( __format__( __printf__, 1, 0 ) ) );
 
 /* Always available */
-void __warning(const char *fmt, ...);
-void __pr_stat(const char *fmt, ...);
+void __warning(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
+void __pr_stat(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
 
-void __vwarning(const char *fmt, va_list ap);
-void __vpr_stat(const char *fmt, va_list ap);
+void __vwarning(const char *fmt, va_list ap) __attribute__( ( __format__( __printf__, 1, 0 ) ) );
+void __vpr_stat(const char *fmt, va_list ap) __attribute__( ( __format__( __printf__, 1, 0 ) ) );
 
 #define min(x, y) ({				\
 	typeof(x) _min1 = (x);			\

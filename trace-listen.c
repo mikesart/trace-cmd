@@ -125,6 +125,8 @@ static void finish(int sig)
 
 #define LOG_BUF_SIZE 1024
 static void __plog(const char *prefix, const char *fmt, va_list ap,
+		   FILE *fp) __attribute__( ( __format__( __printf__, 2, 0 ) ) );
+static void __plog(const char *prefix, const char *fmt, va_list ap,
 		   FILE *fp)
 {
 	static int newline = 1;

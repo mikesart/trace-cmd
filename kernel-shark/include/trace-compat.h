@@ -47,7 +47,7 @@ gdouble gtk_adjustment_get_lower(GtkAdjustment *adj);
 gboolean gtk_show_uri(GdkScreen *screen, const gchar *uri,
 		      guint32 timestamp, GError **error);
 
-void g_string_vprintf(GString *string, const gchar *format, va_list args);
+void g_string_vprintf(GString *string, const gchar *format, va_list args) __attribute__( ( __format__( __printf__, 1, 0 ) ) );
 
 #endif /* version < 2.14.0 */
 

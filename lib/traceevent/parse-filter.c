@@ -43,6 +43,7 @@ struct event_list {
 	struct event_format	*event;
 };
 
+static void show_error(char *error_buf, const char *fmt, ...) __attribute__( ( __format__( __printf__, 2, 3 ) ) );
 static void show_error(char *error_buf, const char *fmt, ...)
 {
 	unsigned long long index;

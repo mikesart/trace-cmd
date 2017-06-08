@@ -39,7 +39,7 @@ static GString *statusstr;
 
 static GtkWidget *parent_window;
 
-static void (*alt_warning)(const char *fmt, va_list ap);
+static void (*alt_warning)(const char *fmt, va_list ap) __attribute__( ( __format__( __printf__, 1, 0 ) ) );
 
 void vpr_stat(const char *fmt, va_list ap)
 {

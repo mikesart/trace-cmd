@@ -222,9 +222,9 @@ void show_instance_file(struct buffer_instance *instance, const char *name);
 int count_cpus(void);
 
 /* No longer in event-utils.h */
-void __noreturn die(const char *fmt, ...); /* Can be overriden */
+void __noreturn die(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) ); /* Can be overriden */
 void *malloc_or_die(unsigned int size); /* Can be overridden */
-void __noreturn __die(const char *fmt, ...);
-void __noreturn _vdie(const char *fmt, va_list ap);
+void __noreturn __die(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
+void __noreturn _vdie(const char *fmt, va_list ap) __attribute__( ( __format__( __printf__, 1, 0 ) ) );
 
 #endif /* __TRACE_LOCAL_H */

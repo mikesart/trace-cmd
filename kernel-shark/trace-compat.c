@@ -85,6 +85,7 @@ gboolean gtk_show_uri(GdkScreen *screen, const gchar *uri,
 	return FALSE;
 }
 
+void g_string_vprintf(GString *string, const gchar *format, va_list args) __attribute__( ( __format__( __printf__, 1, 0 ) ) );
 void g_string_vprintf(GString *string, const gchar *format, va_list args)
 {
 	char buf[1024];

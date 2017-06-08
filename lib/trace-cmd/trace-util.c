@@ -1632,6 +1632,7 @@ void tracecmd_put_tracing_file(char *name)
 	free(name);
 }
 
+void __noreturn __vdie(const char *fmt, va_list ap) __attribute__( ( __format__( __printf__, 1, 0 ) ) );
 void __noreturn __vdie(const char *fmt, va_list ap)
 {
 	int ret = errno;
@@ -1648,6 +1649,7 @@ void __noreturn __vdie(const char *fmt, va_list ap)
 	exit(ret);
 }
 
+void __noreturn __die(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
 void __noreturn __die(const char *fmt, ...)
 {
 	va_list ap;
@@ -1657,6 +1659,7 @@ void __noreturn __die(const char *fmt, ...)
 	va_end(ap);
 }
 
+void __weak __noreturn die(const char *fmt, ...) __attribute__( ( __format__( __printf__, 1, 2 ) ) );
 void __weak __noreturn die(const char *fmt, ...)
 {
 	va_list ap;

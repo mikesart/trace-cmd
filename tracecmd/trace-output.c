@@ -223,6 +223,41 @@ static tsize_t copy_file(struct tracecmd_output *handle,
 	return size;
 }
 
+static tsize_t read_file(const char *file, char **retbuf)
+{
+	char *buf = NULL;
+	tsize_t size;
+	int fd;
+
+	fd = open(file, O_RDONLY);
+	if (fd < 0)
+		return 0;
+
+	size = get_size_fd(fd);
+	if (!size)
+		goto out_close;
+
+	buf = malloc(size + 1);
+	if (!buf)
+		goto out_close;
+
+	if (__do_read_check(fd, buf, size)) {
+		warning("Failed reading '%s'", file);
+		goto out_close;
+	}
+
+	buf[size] = 0;
+	*retbuf = buf;
+
+	close(fd);
+	return size + 1;
+
+out_close:
+	close(fd);
+	free(buf);
+	return 0;
+}
+
 /*
  * Finds the path to the debugfs/tracing
  * Allocates the string and stores it.
@@ -778,6 +813,34 @@ out_free:
 	return ret;
 }
 
+static int add_option_saved_tgids(struct tracecmd_output *handle)
+{
+	struct stat st;
+	tsize_t size;
+	char *file;
+	char *buf;
+	int ret;
+
+	file = get_tracing_file(handle, "saved_tgids");
+	if (!file)
+		return -1;
+
+	ret = stat(file, &st);
+	if (ret >= 0) {
+		size = read_file(file, &buf);
+		if (size) {
+			tracecmd_add_option(handle, TRACECMD_OPTION_SAVED_TGIDS,
+					size, buf);
+
+			free(buf);
+			ret = 0;
+		}
+	}
+
+	put_tracing_file(file);
+	return ret;
+}
+
 static struct tracecmd_output *
 create_file_fd(int fd, struct tracecmd_input *ihandle,
 	       const char *tracing_dir,
@@ -867,6 +930,8 @@ create_file_fd(int fd, struct tracecmd_input *ihandle,
 	 */
 	if (save_tracing_file_data(handle, "saved_cmdlines") < 0)
 		goto out_free;
+
+	add_option_saved_tgids(handle);
 
 	return handle;
 

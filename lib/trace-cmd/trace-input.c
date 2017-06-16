@@ -2155,6 +2155,8 @@ static int handle_options(struct tracecmd_input *handle)
 		case TRACECMD_OPTION_CPUCOUNT:
 			cpus = *(int *)buf;
 			handle->cpus = __data2host4(handle->pevent, cpus);
+		case TRACECMD_OPTION_SAVED_TGIDS:
+			tracecmd_parse_tgids(handle->pevent, buf, size);
 			break;
 		default:
 			warning("unknown option %d", option);

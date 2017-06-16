@@ -377,6 +377,25 @@ void trace_util_print_plugin_options(struct trace_seq *s)
 	}
 }
 
+void tracecmd_parse_tgids(struct pevent *pevent,
+			  char *file, int size __maybe_unused)
+{
+	char *next = NULL;
+	int pid, tgid;
+	char *endptr;
+	char *line;
+
+	line = strtok_r(file, "\n", &next);
+	while (line) {
+		pid = strtol(line, &endptr, 10);
+		if (endptr && *endptr == ' ') {
+			tgid = strtol(endptr + 1, NULL, 10);
+			pevent_register_tgid(pevent, tgid, pid);
+		}
+		line = strtok_r(NULL, "\n", &next);
+	}
+}
+
 void tracecmd_parse_cmdlines(struct pevent *pevent,
 			     char *file, int size __maybe_unused)
 {

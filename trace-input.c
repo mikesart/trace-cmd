@@ -2151,6 +2151,9 @@ static int handle_options(struct tracecmd_input *handle)
 			hook->next = handle->hooks;
 			handle->hooks = hook;
 			break;
+		case TRACECMD_OPTION_SAVED_TGIDS:
+			tracecmd_parse_tgids(handle->pevent, buf, size);
+			break;
 		default:
 			warning("unknown option %d", option);
 			break;

@@ -27,6 +27,7 @@
 #define TRACECMD_ERROR(ret)	((void *)((unsigned long)(ret) | TRACECMD_ERR_MSK))
 #define TRACECMD_PTR2ERR(ptr)	((unisgned long)(ptr) & ~TRACECMD_ERR_MSK)
 
+void tracecmd_parse_tgids(struct pevent *pevent, char *file, int size);
 void tracecmd_parse_cmdlines(struct pevent *pevent, char *file, int size);
 void tracecmd_parse_trace_clock(struct pevent *pevent, char *file, int size);
 void tracecmd_parse_proc_kallsyms(struct pevent *pevent, char *file, unsigned int size);
@@ -89,6 +90,7 @@ enum {
 	TRACECMD_OPTION_UNAME,
 	TRACECMD_OPTION_HOOK,
 	TRACECMD_OPTION_OFFSET,
+	TRACECMD_OPTION_SAVED_TGIDS,
 };
 
 enum {

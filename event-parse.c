@@ -39,6 +39,9 @@
 #include "event-parse.h"
 #include "event-utils.h"
 
+/* From include/linux/threads.h */
+#define PID_MAX_DEFAULT 0x8000
+
 static const char *input_buf;
 static unsigned long long input_buf_ptr;
 static unsigned long long input_buf_siz;
@@ -321,6 +324,23 @@ int pevent_register_comm(struct pevent *pevent, const char *comm, int pid)
 	pevent->cmdlist = item;
 	pevent->cmdline_count++;
 
+	return 0;
+}
+
+int pevent_register_tgid(struct pevent *pevent, int tgid, int pid)
+{
+	if (pid <= 0 || pid > PID_MAX_DEFAULT)
+		return -1;
+	if (tgid <= 0 || tgid > PID_MAX_DEFAULT)
+		return -1;
+
+	if (!pevent->tgid_map) {
+		pevent->tgid_map = calloc(PID_MAX_DEFAULT + 1, sizeof(*pevent->tgid_map));
+		if (!pevent->tgid_map)
+			return -1;
+	}
+
+	pevent->tgid_map[pid] = tgid;
 	return 0;
 }
 
@@ -5252,6 +5272,21 @@ const char *pevent_data_comm_from_pid(struct pevent *pevent, int pid)
 	return comm;
 }
 
+/**
+ * pevent_data_tgid_from_pid - return the TGID from PID
+ * @pevent: a handle to the pevent
+ * @pid: the PID of the task to search for
+ *
+ * This returns a thread group id for the given @pid, or 0
+ * if TGID not found.
+ */
+int pevent_data_tgid_from_pid(struct pevent *pevent, int pid)
+{
+	if (pevent->tgid_map && pid <= PID_MAX_DEFAULT)
+		return pevent->tgid_map[pid];
+	return 0;
+}
+
 static struct cmdline *
 pid_from_cmdlist(struct pevent *pevent, const char *comm, struct cmdline *next)
 {
@@ -5422,16 +5457,28 @@ void pevent_print_event_task(struct pevent *pevent, struct trace_seq *s,
 {
 	void *data = record->data;
 	const char *comm;
-	int pid;
+	int pid, tgid;
+	char buf[16];
 
 	pid = parse_common_pid(pevent, data);
 	comm = find_cmdline(pevent, pid);
 
+	if (pevent->flags & PEVENT_SHOW_TGIDS) {
+		tgid = pevent_data_tgid_from_pid(pevent, pid);
+		if (tgid > 0)
+			snprintf(buf, sizeof(buf), "[%-5d] ", tgid);
+		else
+			strcpy(buf, "[     ] ");
+	} else {
+		buf[0] = 0;
+	}
+
 	if (pevent->latency_format) {
-		trace_seq_printf(s, "%8.8s-%-5d %3d",
-		       comm, pid, record->cpu);
-	} else
-		trace_seq_printf(s, "%16s-%-5d [%03d]", comm, pid, record->cpu);
+		trace_seq_printf(s, "%8.8s-%-5d %s%3d",
+		       comm, pid, buf, record->cpu);
+	} else {
+		trace_seq_printf(s, "%16s-%-5d %s[%03d]", comm, pid, buf, record->cpu);
+	}
 }
 
 /**
@@ -6826,6 +6873,8 @@ void pevent_free(struct pevent *pevent)
 		free(printklist);
 		printklist = printknext;
 	}
+
+	free(pevent->tgid_map);
 
 	for (i = 0; i < pevent->nr_events; i++)
 		pevent_free_format(pevent->events[i]);

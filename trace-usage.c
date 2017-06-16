@@ -141,6 +141,7 @@ static struct usage_help usage_help[] = {
 		"          -e show file endianess\n"
 		"          -f show function list\n"
 		"          -P show printk list\n"
+		"          -g show thread group ids (TGIDS)\n"
 		"          -E show event files stored\n"
 		"          -F filter to filter output on\n"
 		"          -I filter out events with the HARDIRQ flag set\n"

@@ -1430,6 +1430,7 @@ void trace_report (int argc, char **argv)
 	int show_endian = 0;
 	int show_page_size = 0;
 	int show_printk = 0;
+	int show_tgids = 0;
 	int show_uname = 0;
 	int latency_format = 0;
 	int show_events = 0;
@@ -1481,7 +1482,7 @@ void trace_report (int argc, char **argv)
 			{NULL, 0, NULL, 0}
 		};
 
-		c = getopt_long (argc-1, argv+1, "+hSIi:H:feGpRr:tPNn:LlEwF:VvTqO:",
+		c = getopt_long (argc-1, argv+1, "+hSIi:H:feGpRr:tPgNn:LlEwF:VvTqO:",
 			long_options, &option_index);
 		if (c == -1)
 			break;
@@ -1521,6 +1522,9 @@ void trace_report (int argc, char **argv)
 			break;
 		case 'P':
 			show_printk = 1;
+			break;
+		case 'g':
+			show_tgids = 1;
 			break;
 		case 'L':
 			tracecmd_disable_sys_plugins = 1;
@@ -1696,6 +1700,8 @@ void trace_report (int argc, char **argv)
 
 		if (nanosec)
 			pevent->flags |= PEVENT_NSEC_OUTPUT;
+		if (show_tgids)
+			pevent->flags |= PEVENT_SHOW_TGIDS;
 
 		if (raw)
 			pevent->print_raw = 1;

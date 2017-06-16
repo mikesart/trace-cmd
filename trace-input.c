@@ -196,38 +196,6 @@ static const char *show_records(struct list_head *pages)
 
 static int init_cpu(struct tracecmd_input *handle, int cpu);
 
-static ssize_t do_read(struct tracecmd_input *handle, void *data, size_t size)
-{
-	ssize_t tot = 0;
-	ssize_t r;
-
-	do {
-		r = read_intr(handle->fd, data + tot, size - tot);
-		tot += r;
-
-		if (!r)
-			break;
-		if (r < 0)
-			return r;
-	} while (tot != size);
-
-	return tot;
-}
-
-static ssize_t
-do_read_check(struct tracecmd_input *handle, void *data, size_t size)
-{
-	ssize_t ret;
-
-	ret = do_read(handle, data, size);
-	if (ret < 0)
-		return ret;
-	if (ret != size)
-		return -1;
-
-	return 0;
-}
-
 static char *read_string(struct tracecmd_input *handle)
 {
 	char buf[BUFSIZ];
@@ -237,7 +205,7 @@ static char *read_string(struct tracecmd_input *handle)
 	ssize_t r;
 
 	for (;;) {
-		r = do_read(handle, buf, BUFSIZ);
+		r = __do_read(handle->fd, buf, BUFSIZ);
 		if (r < 0)
 			goto fail;
 		if (!r)
@@ -299,7 +267,7 @@ static int read4(struct tracecmd_input *handle, unsigned int *size)
 	struct pevent *pevent = handle->pevent;
 	unsigned int data;
 
-	if (do_read_check(handle, &data, 4))
+	if (__do_read_check(handle->fd, &data, 4))
 		return -1;
 
 	*size = __data2host4(pevent, data);
@@ -311,7 +279,7 @@ static int read8(struct tracecmd_input *handle, unsigned long long *size)
 	struct pevent *pevent = handle->pevent;
 	unsigned long long data;
 
-	if (do_read_check(handle, &data, 8))
+	if (__do_read_check(handle->fd, &data, 8))
 		return -1;
 
 	*size = __data2host8(pevent, data);
@@ -325,7 +293,7 @@ static int read_header_files(struct tracecmd_input *handle)
 	char *header;
 	char buf[BUFSIZ];
 
-	if (do_read_check(handle, buf, 12))
+	if (__do_read_check(handle->fd, buf, 12))
 		return -1;
 
 	if (memcmp(buf, "header_page", 12) != 0)
@@ -338,7 +306,7 @@ static int read_header_files(struct tracecmd_input *handle)
 	if (!header)
 		return -1;
 
-	if (do_read_check(handle, header, size))
+	if (__do_read_check(handle->fd, header, size))
 		goto failed_read;
 
 	pevent_parse_header_page(pevent, header, size, handle->long_size);
@@ -350,7 +318,7 @@ static int read_header_files(struct tracecmd_input *handle)
 	 */
 	handle->long_size = pevent->header_page_size_size;
 
-	if (do_read_check(handle, buf, 13))
+	if (__do_read_check(handle->fd, buf, 13))
 		return -1;
 
 	if (memcmp(buf, "header_event", 13) != 0)
@@ -363,7 +331,7 @@ static int read_header_files(struct tracecmd_input *handle)
 	if (!header)
 		return -1;
 
-	if (do_read_check(handle, header, size))
+	if (__do_read_check(handle->fd, header, size))
 		goto failed_read;
 
 	free(header);
@@ -420,7 +388,7 @@ static int read_ftrace_file(struct tracecmd_input *handle,
 	buf = malloc(size);
 	if (!buf)
 		return -1;
-	if (do_read_check(handle, buf, size)) {
+	if (__do_read_check(handle->fd, buf, size)) {
 		free(buf);
 		return -1;
 	}
@@ -449,7 +417,7 @@ static int read_event_file(struct tracecmd_input *handle,
 	if (!buf)
 		return -1;
 
-	if (do_read_check(handle, buf, size)) {
+	if (__do_read_check(handle->fd, buf, size)) {
 		free(buf);
 		return -1;
 	}
@@ -680,7 +648,7 @@ static int read_proc_kallsyms(struct tracecmd_input *handle)
 	buf = malloc(size+1);
 	if (!buf)
 		return -1;
-	if (do_read_check(handle, buf, size)){
+	if (__do_read_check(handle->fd, buf, size)){
 		free(buf);
 		return -1;
 	}
@@ -705,7 +673,7 @@ static int read_ftrace_printk(struct tracecmd_input *handle)
 	buf = malloc(size + 1);
 	if (!buf)
 		return -1;
-	if (do_read_check(handle, buf, size)) {
+	if (__do_read_check(handle->fd, buf, size)) {
 		free(buf);
 		return -1;
 	}
@@ -2104,20 +2072,20 @@ static int handle_options(struct tracecmd_input *handle)
 	char *buf;
 
 	for (;;) {
-		if (do_read_check(handle, &option, 2))
+		if (__do_read_check(handle->fd, &option, 2))
 			return -1;
 
 		if (option == TRACECMD_OPTION_DONE)
 			break;
 
 		/* next 4 bytes is the size of the option */
-		if (do_read_check(handle, &size, 4))
+		if (__do_read_check(handle->fd, &size, 4))
 			return -1;
 		size = __data2host4(handle->pevent, size);
 		buf = malloc(size);
 		if (!buf)
 			return -ENOMEM;
-		if (do_read_check(handle, buf, size))
+		if (__do_read_check(handle->fd, buf, size))
 			return -1;
 
 		switch (option) {
@@ -2208,14 +2176,14 @@ static int read_cpu_data(struct tracecmd_input *handle)
 	char buf[10];
 	int cpu;
 
-	if (do_read_check(handle, buf, 10))
+	if (__do_read_check(handle->fd, buf, 10))
 		return -1;
 
 	/* check if this handles options */
 	if (strncmp(buf, "options", 7) == 0) {
 		if (handle_options(handle) < 0)
 			return -1;
-		if (do_read_check(handle, buf, 10))
+		if (__do_read_check(handle->fd, buf, 10))
 			return -1;
 	}
 
@@ -2312,7 +2280,7 @@ static int read_data_and_size(struct tracecmd_input *handle,
 	*data = malloc(*size + 1);
 	if (!*data)
 		return -1;
-	if (do_read_check(handle, *data, *size)) {
+	if (__do_read_check(handle->fd, *data, *size)) {
 		free(*data);
 		return -1;
 	}
@@ -2574,13 +2542,13 @@ struct tracecmd_input *tracecmd_alloc_fd(int fd)
 	handle->fd = fd;
 	handle->ref = 1;
 
-	if (do_read_check(handle, buf, 3))
+	if (__do_read_check(handle->fd, buf, 3))
 		goto failed_read;
 
 	if (memcmp(buf, test, 3) != 0)
 		goto failed_read;
 
-	if (do_read_check(handle, buf, 7))
+	if (__do_read_check(handle->fd, buf, 7))
 		goto failed_read;
 	if (memcmp(buf, "tracing", 7) != 0)
 		goto failed_read;
@@ -2591,7 +2559,7 @@ struct tracecmd_input *tracecmd_alloc_fd(int fd)
 	pr_stat("version = %s\n", version);
 	free(version);
 
-	if (do_read_check(handle, buf, 1))
+	if (__do_read_check(handle->fd, buf, 1))
 		goto failed_read;
 
 	handle->pevent = pevent_alloc();
@@ -2606,7 +2574,7 @@ struct tracecmd_input *tracecmd_alloc_fd(int fd)
 	handle->pevent->file_bigendian = buf[0];
 	handle->pevent->host_bigendian = tracecmd_host_bigendian();
 
-	do_read_check(handle, buf, 1);
+	__do_read_check(handle->fd, buf, 1);
 	handle->long_size = buf[0];
 
 	read4(handle, &page_size);
@@ -2769,7 +2737,7 @@ void tracecmd_close(struct tracecmd_input *handle)
 static int read_copy_size8(struct tracecmd_input *handle, int fd, unsigned long long *size)
 {
 	/* read size */
-	if (do_read_check(handle, size, 8))
+	if (__do_read_check(handle->fd, size, 8))
 		return -1;
 
 	if (__do_write_check(fd, size, 8))
@@ -2782,7 +2750,7 @@ static int read_copy_size8(struct tracecmd_input *handle, int fd, unsigned long 
 static int read_copy_size4(struct tracecmd_input *handle, int fd, unsigned int *size)
 {
 	/* read size */
-	if (do_read_check(handle, size, 4))
+	if (__do_read_check(handle->fd, size, 4))
 		return -1;
 
 	if (__do_write_check(fd, size, 4))
@@ -2800,7 +2768,7 @@ static int read_copy_data(struct tracecmd_input *handle,
 	buf = malloc(size);
 	if (!buf)
 		return -1;
-	if (do_read_check(handle, buf, size))
+	if (__do_read_check(handle->fd, buf, size))
 		goto failed_read;
 
 	if (__do_write_check(fd, buf, size))

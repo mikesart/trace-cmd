@@ -63,7 +63,7 @@ open_intr(const char *pathname, int flags)
 	return result;
 }
 
-static ssize_t
+static inline ssize_t
 __do_write(int fd, const void *data, size_t size)
 {
 	ssize_t tot = 0;
@@ -82,12 +82,45 @@ __do_write(int fd, const void *data, size_t size)
 	return tot;
 }
 
-static ssize_t
+static inline ssize_t
 __do_write_check(int fd, const void *data, size_t size)
 {
 	ssize_t ret;
 
 	ret = __do_write(fd, data, size);
+	if (ret < 0)
+		return ret;
+	if (ret != size)
+		return -1;
+
+	return 0;
+}
+
+static inline ssize_t
+__do_read(int fd, void *data, size_t size)
+{
+	ssize_t tot = 0;
+	ssize_t r;
+
+	do {
+		r = read_intr(fd, data + tot, size - tot);
+		tot += r;
+
+		if (!r)
+			break;
+		if (r < 0)
+			return r;
+	} while (tot != size);
+
+	return tot;
+}
+
+static inline ssize_t
+__do_read_check(int fd, void *data, size_t size)
+{
+	ssize_t ret;
+
+	ret = __do_read(fd, data, size);
 	if (ret < 0)
 		return ret;
 	if (ret != size)

@@ -813,6 +813,98 @@ out_free:
 	return ret;
 }
 
+/*
+ * From tools/perf/util/event.c
+ *
+ * Assumes that the first 4095 bytes of /proc/pid/stat contains
+ * the tgid.
+ */
+static int get_pid_tgid(pid_t pid)
+{
+	char filename[PATH_MAX];
+	char bf[4096];
+	char *tgids;
+	ssize_t n;
+	int fd;
+
+	if (pid < 0)
+		return -1;
+
+	snprintf(filename, sizeof(filename), "/proc/%d/status", pid);
+
+	fd = open(filename, O_RDONLY);
+	if (fd < 0)
+		return -1;
+
+	n = read(fd, bf, sizeof(bf) - 1);
+	close(fd);
+	if (n <= 0)
+		return -1;
+
+	bf[n] = '\0';
+
+	tgids = strstr(bf, "Tgid:");
+
+	if (tgids) {
+		tgids += 5;  /* strlen("Tgid:") */
+		return atoi(tgids);
+	}
+
+	return -1;
+}
+
+/*
+ * Go through the pids in the saved_cmdlines file and read
+ * the Tgid entries from /proc/pid/status file. Save those
+ * pid -> tgid entries in the tracecmd saved_tgids option.
+ */
+static int add_option_proc_tgids(struct tracecmd_output *handle)
+{
+	struct trace_seq s;
+	char *line, *next;
+	struct stat st;
+	int pid, tgid;
+	tsize_t size;
+	char *file;
+	char *buf;
+	int ret;
+
+	file = get_tracing_file(handle, "saved_cmdlines");
+	if (!file)
+		return -1;
+
+	ret = stat(file, &st);
+	if (ret >= 0) {
+		size = read_file(file, &buf);
+
+		if (size) {
+			trace_seq_init(&s);
+
+			line = strtok_r(buf, "\n", &next);
+			while (line) {
+				pid = strtol(line, NULL, 10);
+				tgid = get_pid_tgid(pid);
+
+				if (pid >= 0 && tgid >= 0) {
+					trace_seq_printf(&s, "%d %d\n", pid, tgid);
+				}
+
+				line = strtok_r(NULL, "\n", &next);
+			}
+
+			tracecmd_add_option(handle, TRACECMD_OPTION_SAVED_TGIDS,
+					s.len+1, s.buffer);
+
+			trace_seq_destroy(&s);
+			free(buf);
+			ret = 0;
+		}
+	}
+
+	put_tracing_file(file);
+	return ret;
+}
+
 static int add_option_saved_tgids(struct tracecmd_output *handle)
 {
 	struct stat st;
@@ -835,6 +927,11 @@ static int add_option_saved_tgids(struct tracecmd_output *handle)
 			free(buf);
 			ret = 0;
 		}
+	}
+
+	if (ret) {
+		/* Reading saved_tgids failed. Try reading Tgids from proc. */
+		ret = add_option_proc_tgids(handle);
 	}
 
 	put_tracing_file(file);
@@ -931,6 +1028,9 @@ create_file_fd(int fd, struct tracecmd_input *ihandle,
 	if (save_tracing_file_data(handle, "saved_cmdlines") < 0)
 		goto out_free;
 
+	/*
+	 * Save pid -> tgid mappings
+	 */
 	add_option_saved_tgids(handle);
 
 	return handle;

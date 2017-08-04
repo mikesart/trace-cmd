@@ -902,34 +902,31 @@ static int add_option_proc_tgids(struct tracecmd_output *handle)
 
 static int add_option_saved_tgids(struct tracecmd_output *handle)
 {
-	struct stat st;
+	int ret = -1;
 	tsize_t size;
 	char *file;
 	char *buf;
-	int ret;
 
 	file = get_tracing_file(handle, "saved_tgids");
-	if (!file)
-		return -1;
-
-	ret = stat(file, &st);
-	if (ret >= 0) {
+	if (file) {
 		size = read_file(file, &buf);
 		if (size) {
-			tracecmd_add_option(handle, TRACECMD_OPTION_SAVED_TGIDS,
-					size, buf);
+			if (tracecmd_add_option(handle, TRACECMD_OPTION_SAVED_TGIDS,
+						size, buf)) {
+				ret = 0;
+			}
 
 			free(buf);
-			ret = 0;
 		}
+
+		put_tracing_file(file);
 	}
 
 	if (ret) {
-		/* Reading saved_tgids failed. Try reading Tgids from proc. */
+		/* Reading saved_tgids failed. Try reading tgids from proc. */
 		ret = add_option_proc_tgids(handle);
 	}
 
-	put_tracing_file(file);
 	return ret;
 }
 

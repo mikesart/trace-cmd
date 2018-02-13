@@ -2153,8 +2153,14 @@ static int handle_options(struct tracecmd_input *handle)
 			handle->hooks = hook;
 			break;
 		case TRACECMD_OPTION_CPUCOUNT:
-			cpus = *(int *)buf;
-			handle->cpus = __data2host4(handle->pevent, cpus);
+			if ( size == sizeof( int ) ) {
+				cpus = *(int *)buf;
+				handle->cpus = __data2host4(handle->pevent, cpus);
+			}
+			else {
+				tracecmd_parse_tgids(handle->pevent, buf, size);
+			}
+			break;
 		case TRACECMD_OPTION_SAVED_TGIDS:
 			tracecmd_parse_tgids(handle->pevent, buf, size);
 			break;
